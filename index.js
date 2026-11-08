@@ -12,7 +12,15 @@ const formElement = document.querySelector(".to-do__form");
 const inputElement = document.querySelector(".to-do__input");
 
 function loadTasks() {
-
+  const savedTasks = localStorage.getItem("tasks");
+  if (savedTasks) {
+    try {
+      return JSON.parse(savedTasks);
+    } catch {
+      return items;
+    }
+  }
+  return items;
 }
 
 function createItem(item) {
@@ -23,13 +31,76 @@ function createItem(item) {
   const duplicateButton = clone.querySelector(".to-do__item-button_type_duplicate");
   const editButton = clone.querySelector(".to-do__item-button_type_edit");
 
+  textElement.textContent = item;
+
+  deleteButton.addEventListener("click", () => {
+    clone.remove();
+    items = getTasksFromDOM();
+    saveTasks(items);
+  });
+
+  duplicateButton.addEventListener("click", () => {
+    const itemName = textElement.textContent;
+    const newItem = createItem(itemName);
+    listElement.prepend(newItem);
+    items = getTasksFromDOM();
+    saveTasks(items);
+  });
+
+  let oldText = item;
+
+  editButton.addEventListener("click", () => {
+    oldText = textElement.textContent;
+    textElement.contentEditable = "true";
+    textElement.focus();
+  });
+
+  textElement.addEventListener("keydown", (evt) => {
+    if (evt.key === "Enter") {
+      evt.preventDefault();
+      textElement.blur();
+    }
+    if (evt.key === "Escape") {
+      textElement.textContent = oldText;
+      textElement.blur();
+    }
+  });
+
+  textElement.addEventListener("blur", () => {
+    textElement.contentEditable = "false";
+    textElement.textContent = textElement.textContent.trim() || oldText;
+    items = getTasksFromDOM();
+    saveTasks(items);
+  });
+
+  return clone;
 }
 
 function getTasksFromDOM() {
-
+  const itemsNamesElements = listElement.querySelectorAll(".to-do__item-text");
+  const tasks = [];
+  itemsNamesElements.forEach((element) => {
+    tasks.push(element.textContent);
+  });
+  return tasks;
 }
 
 function saveTasks(tasks) {
-
+  localStorage.setItem("tasks", JSON.stringify(tasks));
 }
+
+formElement.addEventListener("submit", (evt) => {
+  evt.preventDefault();
+  const task = inputElement.value.trim();
+  if (!task) return;
+  listElement.prepend(createItem(task));
+  items = getTasksFromDOM();
+  saveTasks(items);
+  formElement.reset();
+});
+
+items = loadTasks();
+items.forEach((item) => {
+  listElement.append(createItem(item));
+});
 
